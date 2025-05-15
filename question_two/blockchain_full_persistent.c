@@ -1,9 +1,20 @@
+/**
+ * This program implements a blockchain reloading system in C.
+ * 
+ * It allows users to create a blockchain, add blocks, transactions, and save them
+ * to a file. The program can also load the blockchain from the file and validate its integrity.
+ * 
+ * The blockchain consists of blocks that contain data, a hash of the previous block,
+ * and a list of transactions. Each transaction has a sender, receiver, amount, and timestamp.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <openssl/sha.h>
 
+// Constants
 #define MAX_DATA_SIZE 256
 #define HASH_SIZE 64
 #define MAX_TRANSACTIONS 10
@@ -13,6 +24,7 @@
 #define INPUT_BUFFER_SIZE 1024
 #define FILENAME "blockchain.dat"
 
+// Struct definition for Transaction
 typedef struct Transaction
 {
         char sender[MAX_SENDER_SIZE];
@@ -21,6 +33,7 @@ typedef struct Transaction
         time_t timestamp;
 } Transaction;
 
+// Struct definition for Block
 typedef struct Block
 {
         int index;
@@ -33,12 +46,14 @@ typedef struct Block
         struct Block *next;
 } Block;
 
+// Struct definition for Blockchain
 typedef struct Blockchain
 {
         Block *head;
         int length;
 } Blockchain;
 
+// Function prototypes
 void calculateHash(Block *block, char *output);
 Block *createBlock(int index, const char *data, const char *previous_hash);
 void displayBlock(Block *block);
@@ -54,8 +69,10 @@ Blockchain *loadBlockchain(const char *filename);
 double getDoubleInput(const char *prompt);
 void getStringInput(const char *prompt, char *buffer, size_t size);
 
+// Main function
 int main()
 {
+        // Create a new blockchain
         Blockchain *chain = createBlockchain();
         if (!chain)
         {
@@ -76,6 +93,7 @@ int main()
                 return 1;
         }
 
+        // Menu loop
         char input[MAX_DATA_SIZE];
         char sender[MAX_SENDER_SIZE];
         char receiver[MAX_RECEIVER_SIZE];
@@ -84,6 +102,7 @@ int main()
 
         do
         {
+                // Display menu
                 printf("\nBlockchain Menu:\n");
                 printf("1. Add new block\n");
                 printf("2. Add transaction to latest block\n");
@@ -94,6 +113,7 @@ int main()
                 printf("7. Exit\n");
                 printf("Enter choice: ");
 
+                // Get user input
                 char choice_str[10];
                 if (fgets(choice_str, sizeof(choice_str), stdin))
                 {
@@ -175,6 +195,7 @@ int main()
                 }
         } while (choice != 7);
 
+        // Free the blockchain
         freeBlockchain(chain);
         return 0;
 }
@@ -185,6 +206,7 @@ int main()
  */
 Blockchain *createBlockchain(void)
 {
+        // Allocate memory for the blockchain
         Blockchain *chain = (Blockchain *)malloc(sizeof(Blockchain));
         if (chain)
         {
@@ -201,6 +223,7 @@ Blockchain *createBlockchain(void)
  */
 void calculateHash(Block *block, char *output)
 {
+        // Create a string representation of the block data
         char input[INPUT_BUFFER_SIZE];
         char trans_data[INPUT_BUFFER_SIZE / 2] = "";
         unsigned char hash[SHA256_DIGEST_LENGTH];
@@ -225,10 +248,12 @@ void calculateHash(Block *block, char *output)
                  block->index, block->timestamp, block->data,
                  block->previous_hash, trans_data);
 
+        // Calculate SHA-256 hash
         SHA256_Init(&sha256);
         SHA256_Update(&sha256, input, strlen(input));
         SHA256_Final(hash, &sha256);
 
+        // Convert hash to hex string
         for (int i = 0; i < SHA256_DIGEST_LENGTH; i++)
         {
                 sprintf(output + (i * 2), "%02x", hash[i]);
@@ -245,10 +270,12 @@ void calculateHash(Block *block, char *output)
  */
 Block *createBlock(int index, const char *data, const char *previous_hash)
 {
+        // Allocate memory for the block
         Block *block = (Block *)malloc(sizeof(Block));
         if (!block)
                 return NULL;
 
+        // Initialize block data
         block->index = index;
         block->timestamp = time(NULL);
         block->transaction_count = 0;
@@ -258,6 +285,7 @@ Block *createBlock(int index, const char *data, const char *previous_hash)
         block->previous_hash[HASH_SIZE] = '\0';
         block->next = NULL;
 
+        // Calculate hash for the new block
         calculateHash(block, block->hash);
         return block;
 }
@@ -270,6 +298,7 @@ Block *createBlock(int index, const char *data, const char *previous_hash)
  */
 int addBlock(Blockchain *chain, const char *data)
 {
+        // Check if the blockchain is valid
         if (!chain)
                 return 0;
 
@@ -282,16 +311,19 @@ int addBlock(Blockchain *chain, const char *data)
                 return 1;
         }
 
+        // Create a new block and add it to the end of the chain
         Block *current = chain->head;
         while (current->next)
         {
                 current = current->next;
         }
 
+        // Create a new block with the index of the last block + 1
         Block *newBlock = createBlock(chain->length, data, current->hash);
         if (!newBlock)
                 return 0;
 
+        // Link the new block to the end of the chain
         current->next = newBlock;
         chain->length++;
 
@@ -305,15 +337,18 @@ int addBlock(Blockchain *chain, const char *data)
  */
 int validateBlockchain(Blockchain *chain)
 {
+        // Check if the blockchain is valid
         if (!chain || !chain->head)
                 return 1;
-
+        // Check if the chain is empty
         Block *current = chain->head->next;
         Block *previous = chain->head;
         char calculated_hash[HASH_SIZE + 1];
 
+        // Validate each block in the chain
         while (current)
         {
+                // Check if the previous hash matches
                 calculateHash(previous, calculated_hash);
                 if (strcmp(current->previous_hash, calculated_hash) != 0)
                 {
@@ -343,21 +378,27 @@ int validateBlockchain(Blockchain *chain)
  */
 int addTransaction(Block *block, const char *sender, const char *receiver, double amount)
 {
+        // Check if the block is valid
         if (!block || block->transaction_count >= MAX_TRANSACTIONS)
                 return 0;
 
+        // Check if the transaction data is valid
         Transaction *trans = &block->transactions[block->transaction_count];
         strncpy(trans->sender, sender, MAX_SENDER_SIZE - 1);
         trans->sender[MAX_SENDER_SIZE - 1] = '\0';
 
+        // Check if the receiver data is valid
         strncpy(trans->receiver, receiver, MAX_RECEIVER_SIZE - 1);
         trans->receiver[MAX_RECEIVER_SIZE - 1] = '\0';
 
+        // Check if the amount is valid
         trans->amount = amount;
         trans->timestamp = time(NULL);
 
+        // Update the transaction count
         block->transaction_count++;
 
+        // Recalculate the block hash
         calculateHash(block, block->hash);
         return 1;
 }
@@ -368,12 +409,14 @@ int addTransaction(Block *block, const char *sender, const char *receiver, doubl
  */
 void displayTransactions(Block *block)
 {
+        // Check if the block is valid
         if (block->transaction_count == 0)
         {
                 printf("No transactions in this block\n");
                 return;
         }
 
+        // Display each transaction
         printf("\nTransactions:\n");
         for (int i = 0; i < block->transaction_count; i++)
         {
@@ -391,6 +434,7 @@ void displayTransactions(Block *block)
  */
 void displayBlock(Block *block)
 {
+        // Check if the block is valid
         printf("\nBlock #%d\n", block->index);
         printf("Timestamp: %s", ctime(&block->timestamp));
         printf("Data: %s\n", block->data);
@@ -405,6 +449,7 @@ void displayBlock(Block *block)
  */
 void displayBlockchain(Blockchain *chain)
 {
+        // Check if the blockchain is valid
         if (!chain || !chain->head)
         {
                 printf("Blockchain is empty\n");
@@ -425,6 +470,7 @@ void displayBlockchain(Blockchain *chain)
  */
 void freeBlockchain(Blockchain *chain)
 {
+        // Check if the blockchain is valid
         if (!chain)
                 return;
 
@@ -446,6 +492,7 @@ void freeBlockchain(Blockchain *chain)
  */
 void getStringInput(const char *prompt, char *buffer, size_t size)
 {
+        // Check if the buffer is valid
         printf("%s", prompt);
         if (fgets(buffer, size, stdin))
         {
@@ -460,6 +507,7 @@ void getStringInput(const char *prompt, char *buffer, size_t size)
  */
 double getDoubleInput(const char *prompt)
 {
+        // Check if the prompt is valid
         char buffer[64];
         double value;
 
