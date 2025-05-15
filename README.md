@@ -13,4 +13,4 @@ This project implements a basic blockchain system with transaction support and f
 
 ## Author
 
-[God'sfavour Chukwudi] (https://github.com/GChukwudi)
+[God'sfavour Chukwudi](https://github.com/GChukwudi)
