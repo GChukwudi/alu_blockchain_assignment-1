@@ -1,11 +1,9 @@
 # Blockchain Implementation in C
-
 ## Overview
 
 This project implements a basic blockchain system with transaction support and file persistence. It demonstrates fundamental blockchain concepts including block creation, transaction handling, and chain validation.
 
 ## Features
-
 - SHA-256 hashing implementation
 - Block creation and linking
 - Transaction management
@@ -15,4 +13,4 @@ This project implements a basic blockchain system with transaction support and f
 
 ## Author
 
-[God'sfavour Chukwudi](https://github.com/GChukwudi)
+[God'sfavour Chukwudi] (https://github.com/GChukwudi)
